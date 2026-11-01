@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="ps" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>King Ghani Runner</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Naskh+Arabic:wght@500;700&display=swap" rel="stylesheet">
+<style>
+:root{color-scheme:dark;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);--ink:#fff4e0;--gold:#ffc94a;--hot:#ff5a3c;--night:#2a1244}
+html{height:100%;scroll-padding-top:env(safe-area-inset-top,0px)}
+*,*::before,*::after{box-sizing:inherit}
+html,body{margin:0;height:100%;background:var(--night);overflow:hidden;font-family:"Noto Naskh Arabic","Segoe UI",Tahoma,sans-serif;color:var(--ink);-webkit-user-select:none;user-select:none}
+#game{position:fixed;inset:0;width:100%;height:100%;display:block;touch-action:none}
+#hud{position:fixed;top:calc(env(safe-area-inset-top,0px) + 10px);left:12px;right:12px;display:flex;justify-content:space-between;gap:8px;pointer-events:none;font-weight:700;font-size:20px}
+#hud span{background:rgba(42,18,68,.6);padding:4px 12px;border-radius:12px}
+#hud b{color:var(--gold)}
+.screen{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;text-align:center;padding:24px;background:rgba(32,10,52,.78)}
+.screen.hide{display:none}
+.avatar{width:clamp(130px,34vw,200px);height:clamp(130px,34vw,200px);border-radius:50%;border:4px solid var(--gold);object-fit:cover;box-shadow:0 0 0 4px var(--hot)}
+#profile{position:fixed;top:calc(env(safe-area-inset-top,0px) + 58px);left:12px;display:flex;align-items:center;gap:8px;pointer-events:none;background:rgba(42,18,68,.6);padding:4px 12px 4px 4px;border-radius:30px;font-weight:700;font-size:16px}
+#profile img{width:42px;height:42px;border-radius:50%;border:2px solid var(--gold);object-fit:cover}
+#splash{z-index:5;background:radial-gradient(circle at 50% 40%,#8c2f5e,#2a1244 70%);transition:opacity .6s}
+#splash.fade{opacity:0;pointer-events:none}
+#splash .avatar{animation:pop .7s ease-out}
+@keyframes pop{from{transform:scale(.4);opacity:0}to{transform:scale(1);opacity:1}}
+@media (prefers-reduced-motion:reduce){#splash .avatar{animation:none}}
+h1{margin:0;font-size:clamp(34px,9vw,60px);line-height:1.3;color:var(--gold)}
+p{margin:0;max-width:30em;font-size:clamp(16px,4.2vw,20px);line-height:1.9}
+button{font:inherit;font-weight:700;font-size:22px;padding:12px 38px;border:0;border-radius:14px;background:var(--hot);color:#fff;cursor:pointer;margin-top:6px}
+button:focus-visible{outline:3px solid var(--gold);outline-offset:3px}
+button:active{transform:scale(.97)}
+#final{font-size:26px;color:var(--gold);font-weight:700}
+</style>
+</head>
+<body>
+<canvas id="game"></canvas>
+<div id="hud"><span>ټکي: <b id="sc">0</b></span><span>سکې: <b id="co">0</b></span><span>ریکارډ: <b id="hi">0</b></span></div>
+
+<div class="screen" id="start">
+  <h1 dir="ltr">King Ghani Runner</h1>
+  <p>کیڼ یا ښي ته سوایپ کړئ چې لین بدل شي.<br>پورته سوایپ = ټوپ، ښکته سوایپ = ښکته کېدل.<br>په کمپیوټر کې: غشي کیلي یا WASD.</p>
+  <button id="go">لوبه پیل کړئ</button>
+</div>
+<div class="screen hide" id="over">
+  <h1>ټکر وشو!</h1>
+  <div id="final"></div>
+  <button id="again">بیا لوبه</button>
+</div>
+
+<div id="profile"><img id="pimg" alt=""><span dir="ltr">King Ghani</span></div>
+<div class="screen" id="splash">
+  <img id="face" class="avatar" alt="King Ghani" src="data:image/jpeg;base64,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">
+  <h1 dir="ltr">King Ghani Runner</h1>
+  <p>لوبه چمتو کیږي…</p>
+</div>
+
+<script>
+(function(){
+const cv=document.getElementById('game'),ctx=cv.getContext('2d');
+const $=id=>document.getElementById(id);
+$('pimg').src=$('face').src;
+const sp=$('splash');let spDone=false;
+function closeSplash(){if(spDone)return;spDone=true;sp.classList.add('fade');setTimeout(()=>sp.classList.add('hide'),650)}
+sp.addEventListener('click',closeSplash);setTimeout(closeSplash,2600);
+let W,H,dpr,laneW,U,horizonY,baseY,cx;
+function resize(){
+  dpr=Math.min(window.devicePixelRatio||1,2);
+  W=window.innerWidth;H=window.innerHeight;
+  cv.width=W*dpr;cv.height=H*dpr;ctx.setTransform(dpr,0,0,dpr,0,0);
+  laneW=Math.min(W*0.3,H*0.3);U=laneW*0.55;
+  horizonY=H*0.38;baseY=H*0.84;cx=W/2;
+}
+window.addEventListener('resize',resize);resize();
+
+let best=0;
+try{best=parseInt(localStorage.getItem('runner-best'))||0}catch(e){}
+$('hi').textContent=best;
+
+let state='idle',objs,dist,speed,score,coins,px,lane,jy,vy,slide,spawnLeft,t,shake;
+
+function reset(){
+  objs=[];dist=0;speed=16;score=0;coins=0;px=0;lane=0;jy=0;vy=0;slide=0;spawnLeft=30;t=0;shake=0;
+  $('sc').textContent=0;$('co').textContent=0;
+}
+reset();
+
+function start(){
+  reset();state='play';
+  $('start').classList.add('hide');$('over').classList.add('hide');
+}
+function die(){
+  state='dead';shake=0.4;
+  const s=Math.floor(score);
+  if(s>best){best=s;try{localStorage.setItem('runner-best',best)}catch(e){}}
+  $('hi').textContent=best;
+  $('final').textContent='ستاسو ټکي: '+s+' — سکې: '+coins;
+  setTimeout(()=>$('over').classList.remove('hide'),450);
+}
+$('go').onclick=start;$('again').onclick=start;
+
+function moveLane(d){if(state!=='play')return;lane=Math.max(-1,Math.min(1,lane+d))}
+function jump(){if(state==='play'&&jy<=0.01){vy=9.5;slide=0}}
+function duck(){if(state==='play'){slide=0.7;if(jy>0)vy=-14}}
+
+window.addEventListener('keydown',e=>{
+  const k=e.key;
+  if(state!=='play'){if(k==='Enter'||k===' '){if(!(e.target&&e.target.tagName==='BUTTON')){start();e.preventDefault()}}return}
+  if(k==='ArrowLeft'||k==='a'||k==='A')moveLane(-1);
+  else if(k==='ArrowRight'||k==='d'||k==='D')moveLane(1);
+  else if(k==='ArrowUp'||k==='w'||k==='W'||k===' ')jump();
+  else if(k==='ArrowDown'||k==='s'||k==='S')duck();
+  if(k.startsWith('Arrow')||k===' ')e.preventDefault();
+});
+
+let sx=0,sy=0,sid=null;
+cv.addEventListener('pointerdown',e=>{sx=e.clientX;sy=e.clientY;sid=e.pointerId});
+cv.addEventListener('pointerup',e=>{
+  if(sid!==e.pointerId)return;sid=null;
+  const dx=e.clientX-sx,dy=e.clientY-sy;
+  if(Math.max(Math.abs(dx),Math.abs(dy))<24){jump();return}
+  if(Math.abs(dx)>Math.abs(dy))moveLane(dx>0?1:-1);
+  else if(dy<0)jump();else duck();
+});
+
+function spawn(){
+  const D=80;
+  const r=Math.random();
+  if(r<0.3){
+    const l=Math.floor(Math.random()*3)-1;
+    for(let i=0;i<6;i++)objs.push({k:'coin',lane:l,d:D+i*2.6,hi:i%2&&Math.random()<0.4});
+  }else if(r<0.55){
+    objs.push({k:'crate',lane:Math.floor(Math.random()*3)-1,d:D});
+  }else if(r<0.8){
+    objs.push({k:'bar',lane:Math.floor(Math.random()*3)-1,d:D});
+  }else{
+    const a=Math.floor(Math.random()*3)-1;
+    objs.push({k:'wall',lane:a,d:D});
+    if(Math.random()<0.5){let b=a;while(b===a)b=Math.floor(Math.random()*3)-1;objs.push({k:'wall',lane:b,d:D})}
+  }
+  spawnLeft=Math.max(11,22-speed*0.28)+Math.random()*8;
+}
+
+function update(dt){
+  t+=dt;
+  if(state==='play'){
+    speed=Math.min(40,16+dist/160);
+    const step=speed*dt;dist+=step;score+=step*0.1;
+    spawnLeft-=step;if(spawnLeft<=0)spawn();
+    px+=(lane-px)*Math.min(1,dt*14);
+    if(jy>0||vy>0){vy-=26*dt;jy+=vy*dt;if(jy<=0){jy=0;vy=0}}
+    if(slide>0)slide-=dt;
+    for(const o of objs){
+      o.d-=step;
+      if(o.dead||Math.abs(o.d)>0.7||Math.abs(o.lane-px)>0.6)continue;
+      if(o.k==='coin'){o.dead=true;coins++;score+=5;$('co').textContent=coins}
+      else if(o.k==='crate'){if(jy<0.75){die();break}}
+      else if(o.k==='bar'){if(slide<=0){die();break}}
+      else{die();break}
+    }
+    objs=objs.filter(o=>!o.dead&&o.d>-1.6);
+    $('sc').textContent=Math.floor(score);
+  }else if(state==='idle'){
+    dist+=12*dt;
+  }
+  if(shake>0)shake-=dt;
+}
+
+const sc=d=>1/(1+Math.max(d,-1.2)/10);
+const gy=s=>horizonY+(baseY-horizonY)*s;
+const lx=(l,s)=>cx+l*laneW*s;
+
+function drawBackground(){
+  const g=ctx.createLinearGradient(0,0,0,horizonY);
+  g.addColorStop(0,'#2a1244');g.addColorStop(0.55,'#8c2f5e');g.addColorStop(1,'#ff8a4c');
+  ctx.fillStyle=g;ctx.fillRect(0,0,W,horizonY+1);
+  ctx.fillStyle='#ffd27a';ctx.beginPath();ctx.arc(cx,horizonY-laneW*0.05,laneW*0.55,Math.PI,0);ctx.fill();
+  ctx.fillStyle='#4a1d5c';
+  ctx.beginPath();ctx.moveTo(0,horizonY);
+  for(let x=0;x<=W;x+=W/10){ctx.lineTo(x,horizonY-(18+((Math.sin(x*0.013)+1)*22)))}
+  ctx.lineTo(W,horizonY);ctx.closePath();ctx.fill();
+  ctx.fillStyle='#d98b45';ctx.fillRect(0,horizonY,W,H-horizonY);
+}
+function drawRoad(){
+  const half=1.7*laneW;
+  ctx.fillStyle='#3b2a3f';
+  ctx.beginPath();ctx.moveTo(cx,horizonY);ctx.lineTo(cx+half*1.0,baseY+(H-baseY)*0.0+ (baseY-horizonY)*0.0);
+  // extend road to bottom of screen
+  const sb=(H-horizonY)/(baseY-horizonY);
+  ctx.lineTo(cx+half*sb,H);ctx.lineTo(cx-half*sb,H);ctx.lineTo(cx-half*1.0,baseY);ctx.closePath();ctx.fill();
+  // lane dashes
+  const period=6,off=dist%period;
+  ctx.fillStyle='#ffe9b8';
+  for(const b of[-0.5,0.5]){
+    for(let k=-1;k<14;k++){
+      const d0=k*period-off,d1=d0+period*0.45;
+      if(d1<-1.2)continue;
+      const s0=sc(d0),s1=sc(d1);
+      const w0=laneW*0.035*s0,w1=laneW*0.035*s1;
+      ctx.beginPath();
+      ctx.moveTo(lx(b,s0)-w0,gy(s0));ctx.lineTo(lx(b,s0)+w0,gy(s0));
+      ctx.lineTo(lx(b,s1)+w1,gy(s1));ctx.lineTo(lx(b,s1)-w1,gy(s1));ctx.closePath();ctx.fill();
+    }
+  }
+  // road edges
+  ctx.strokeStyle='#ff5a3c';ctx.lineWidth=Math.max(2,laneW*0.04);
+  for(const sgn of[-1,1]){
+    ctx.beginPath();ctx.moveTo(cx,horizonY);ctx.lineTo(cx+sgn*half*sb,H);ctx.stroke();
+  }
+}
+function drawCactus(x,y,h,s){
+  ctx.fillStyle='#2f7a4a';
+  const w=h*0.22;
+  rr(x-w/2,y-h,w,h,w/2);
+  rr(x-w*1.5,y-h*0.65,w*0.8,h*0.12,w*0.2);rr(x-w*1.5,y-h*0.8,w*0.45,h*0.3,w*0.2);
+  rr(x+w*0.7,y-h*0.55,w*0.8,h*0.12,w*0.2);rr(x+w*1.05,y-h*0.72,w*0.45,h*0.3,w*0.2);
+}
+function rr(x,y,w,h,r){ctx.beginPath();ctx.roundRect?ctx.roundRect(x,y,w,h,r):ctx.rect(x,y,w,h);ctx.fill()}
+
+function drawObj(o){
+  const s=sc(o.d),y=gy(s),x=lx(o.lane,s),u=U*s;
+  if(o.k==='coin'){
+    const cy=y-u*(o.hi?1.5:0.7),r=u*0.28,sq=Math.abs(Math.cos(t*4+o.d));
+    ctx.fillStyle='#ffc94a';ctx.beginPath();ctx.ellipse(x,cy,Math.max(r*sq,r*0.2),r,0,0,7);ctx.fill();
+    ctx.strokeStyle='#b8801a';ctx.lineWidth=Math.max(1,u*0.04);ctx.stroke();
+  }else if(o.k==='crate'){
+    ctx.fillStyle='rgba(0,0,0,.28)';ctx.beginPath();ctx.ellipse(x,y,u*0.55,u*0.14,0,0,7);ctx.fill();
+    ctx.fillStyle='#c9772e';ctx.fillRect(x-u*0.45,y-u*0.62,u*0.9,u*0.62);
+    ctx.strokeStyle='#5c3213';ctx.lineWidth=Math.max(1.5,u*0.07);
+    ctx.strokeRect(x-u*0.45,y-u*0.62,u*0.9,u*0.62);
+    ctx.beginPath();ctx.moveTo(x-u*0.45,y-u*0.62);ctx.lineTo(x+u*0.45,y);ctx.moveTo(x+u*0.45,y-u*0.62);ctx.lineTo(x-u*0.45,y);ctx.stroke();
+  }else if(o.k==='bar'){
+    ctx.fillStyle='#e8e0d0';
+    ctx.fillRect(x-u*0.6,y-u*1.15,u*0.12,u*1.15);ctx.fillRect(x+u*0.48,y-u*1.15,u*0.12,u*1.15);
+    ctx.fillStyle='#ff5a3c';ctx.fillRect(x-u*0.65,y-u*1.3,u*1.3,u*0.4);
+    ctx.fillStyle='#fff4e0';
+    for(let i=0;i<4;i++)ctx.fillRect(x-u*0.65+i*u*0.325+u*0.08,y-u*1.3,u*0.14,u*0.4);
+  }else{
+    ctx.fillStyle='rgba(0,0,0,.3)';ctx.beginPath();ctx.ellipse(x,y,u*0.6,u*0.15,0,0,7);ctx.fill();
+    ctx.fillStyle='#8f2438';ctx.fillRect(x-u*0.5,y-u*1.9,u,u*1.9);
+    ctx.fillStyle='#c2354f';ctx.fillRect(x-u*0.5,y-u*1.9,u,u*0.25);
+    ctx.fillStyle='#6d1527';
+    for(let i=1;i<5;i++)ctx.fillRect(x-u*0.5,y-u*1.9+i*u*0.38,u,u*0.05);
+  }
+}
+
+function drawPlayer(){
+  const s=1,x=lx(px,s),foot=baseY-jy*U*0.7;
+  const dead=state==='dead';
+  ctx.fillStyle='rgba(0,0,0,.3)';
+  ctx.beginPath();ctx.ellipse(x,baseY,U*0.4/(1+jy*0.6),U*0.1,0,0,7);ctx.fill();
+  const sl=slide>0&&jy<=0.01;
+  const ph=t*15,run=state==='play'&&jy<=0.01?1:0;
+  const bodyH=sl?U*0.5:U*0.75,legH=sl?U*0.2:U*0.55;
+  const hipY=foot-legH,topY=hipY-bodyH;
+  ctx.lineCap='round';
+  // legs
+  ctx.strokeStyle='#1c2a5a';ctx.lineWidth=U*0.17;
+  for(const sg of[-1,1]){
+    const sw=run?Math.sin(ph+(sg>0?Math.PI:0)):(jy>0?sg*0.6:0);
+    ctx.beginPath();ctx.moveTo(x+sg*U*0.1,hipY);
+    ctx.lineTo(x+sg*U*0.1+sw*U*0.3,foot-Math.max(0,-sw)*U*0.18);ctx.stroke();
+  }
+  // body
+  ctx.fillStyle='#ff5a3c';rr(x-U*0.25,topY,U*0.5,bodyH,U*0.15);
+  // arms
+  ctx.strokeStyle='#ff5a3c';ctx.lineWidth=U*0.13;
+  for(const sg of[-1,1]){
+    const sw=run?Math.sin(ph+(sg>0?0:Math.PI)):(jy>0?-1:0);
+    ctx.beginPath();ctx.moveTo(x+sg*U*0.24,topY+bodyH*0.2);
+    ctx.lineTo(x+sg*U*0.34+sw*U*0.05,topY+bodyH*0.2+U*0.3+sw*U*0.12);ctx.stroke();
+  }
+  // head
+  const hy=topY-U*0.2+(sl?U*0.12:0);
+  ctx.fillStyle='#f2c29b';ctx.beginPath();ctx.arc(x,hy,U*0.22,0,7);ctx.fill();
+  ctx.fillStyle='#2a1244';ctx.beginPath();ctx.arc(x,hy-U*0.05,U*0.23,Math.PI,0);ctx.fill();
+  ctx.fillRect(x-U*0.04,hy-U*0.02,U*0.3,U*0.05);
+  ctx.fillStyle='#2a1244';ctx.beginPath();ctx.arc(x+U*0.09,hy+U*0.02,U*0.03,0,7);ctx.fill();
+}
+
+function draw(){
+  ctx.save();
+  if(shake>0)ctx.translate((Math.random()-.5)*10,(Math.random()-.5)*10);
+  drawBackground();drawRoad();
+  // scenery + objects far to near
+  const items=[];
+  const per=9,off=dist%per;
+  for(let k=0;k<10;k++){const d=k*per-off;items.push({sc:1,d,side:-1});items.push({sc:1,d:d+4,side:1})}
+  for(const o of objs)items.push(o);
+  items.sort((a,b)=>b.d-a.d);
+  let drawn=false;
+  for(const it of items){
+    if(!drawn&&it.d<0){drawPlayer();drawn=true}
+    if(it.side){const s=sc(it.d);if(it.d>-1.2)drawCactus(cx+it.side*laneW*2.35*s,gy(s),U*1.6*s,s)}
+    else drawObj(it);
+  }
+  if(!drawn)drawPlayer();
+  ctx.restore();
+}
+
+let last=performance.now();
+function loop(now){
+  const dt=Math.min(0.05,(now-last)/1000);last=now;
+  update(dt);draw();requestAnimationFrame(loop);
+}
+requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>
